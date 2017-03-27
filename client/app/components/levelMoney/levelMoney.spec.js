@@ -1,0 +1,49 @@
+import LevelMoneyModule from './levelMoney'
+import LevelMoneyController from './levelMoney.controller';
+import LevelMoneyComponent from './levelMoney.component';
+import LevelMoneyTemplate from './levelMoney.html';
+
+describe('LevelMoney', () => {
+  let $rootScope, makeController;
+
+  beforeEach(window.module(LevelMoneyModule));
+  beforeEach(inject((_$rootScope_) => {
+    $rootScope = _$rootScope_;
+    makeController = () => {
+      return new LevelMoneyController();
+    };
+  }));
+
+  describe('Module', () => {
+    // top-level specs: i.e., routes, injection, naming
+  });
+
+  describe('Controller', () => {
+    // controller specs
+    it('has a name property [REMOVE]', () => { // erase if removing this.name from the controller
+      let controller = makeController();
+      expect(controller).to.have.property('name');
+    });
+  });
+
+  describe('Template', () => {
+    // template specs
+    // tip: use regex to ensure correct bindings are used e.g., {{  }}
+    it('has name in template [REMOVE]', () => {
+      expect(LevelMoneyTemplate).to.match(/{{\s?\$ctrl\.name\s?}}/g);
+    });
+  });
+
+  describe('Component', () => {
+      // component/directive specs
+      let component = LevelMoneyComponent;
+
+      it('includes the intended template',() => {
+        expect(component.template).to.equal(LevelMoneyTemplate);
+      });
+
+      it('invokes the right controller', () => {
+        expect(component.controller).to.equal(LevelMoneyController);
+      });
+  });
+});
