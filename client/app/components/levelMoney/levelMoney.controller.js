@@ -1,23 +1,86 @@
 import _ from 'lodash';
+import moment from 'moment';
 
 const token = 'D03ABBFA004747E07842145195EC7CFC';
 const apiToken = 'AppTokenForInterview';
 const uid = 1110590645;
 const args = {token, uid, 'api-token': apiToken};
+const conversionDenominator = 10000;
 
 class LevelMoneyController {
     constructor($http) {
-        _.assign(this, {$http});
-        this.GetAllTransactions();
+        _.assign(this, {$http, conversionDenominator});
+        this.getAllTransactions();
     }
 
-    GetAllTransactions() {
+    getAllTransactions() {
         this.$http
             .post('https://2016.api.levelmoney.com/api/v2/core/get-all-transactions', {args})
-            .then(res => this.data = _.get(res, 'data.transactions'));
+            .then(res => this.data = this.formatTransactions(_.get(res, 'data.transactions')));
+    }
+
+    formatTransactions(transactions) {
+        let result = {};
+
+        _.forEach(transactions, transaction => {
+            let month = moment(transaction['transaction-time']).format('YYYY-MM');
+            result[month] = result[month] || [];
+            result[month].push(transaction);
+        });
+
+        const monthStrings = _.keys(result);
+        _.forEach(monthStrings, month => result[month] = this.getMonthTotals(result[month]));
+
+        const monthValues = _.values(result);
+        const rangeOfMonths = this.getRangeOfMonths(monthStrings);
+        result.average = this.getUserAveragesPerMonth(monthValues, rangeOfMonths);
+
+        return result;
+    }
+
+    getMonthTotals(transactions) {
+        let result = {totalSpent: 0, totalIncome: 0};
+
+        _.forEach(transactions, transaction => {
+            const {amount} = transaction;
+            if (amount > 0) {
+                result.totalIncome += amount;
+            } else {
+                result.totalSpent += amount;
+            }
+        });
+
+        return result;
+    }
+
+    getUserAveragesPerMonth(months, rangeOfMonths) {
+        let result = {totalSpent: 0, totalIncome: 0};
+
+        _.forEach(months, monthData => {
+            const {totalIncome, totalSpent} = monthData;
+            result.totalIncome += totalIncome;
+            result.totalSpent += totalSpent;
+        });
+
+        result.totalIncome = result.totalIncome / rangeOfMonths;
+        result.totalSpent = result.totalSpent / rangeOfMonths;
+
+        return result;
+    }
+
+    /**
+     * Returns the number of months between the first and last transaction dates
+     * @param monthStrings Sorted list of string representations of month (should include year)
+     * @returns {number} Inclusive number of months between the first and last transaction dates
+     */
+    getRangeOfMonths(monthStrings) {
+        let start = _.head(monthStrings);
+        let end = _.last(monthStrings);
+
+        // Why +1? moment().diff calculates the start of a month to another.
+        // We need it from the start of a month to the end of another
+        return moment(end).diff(moment(start), 'month') + 1;
     }
 }
-
-
 
 export default ['$http', LevelMoneyController];

@@ -1,3 +1,14 @@
-<div>
-  <h1 ng-repeat="transaction in $ctrl.data | limitTo: 10">{{ transaction.merchant }} : {{ transaction.amount }}</h1>
+<div class="flex-container-column">
+  <div class="flex-container p10">
+    <div class="big-item p10"><h1>Month</h1></div>
+    <div class="small-item p10"><h1>Total Income</h1></div>
+    <div class="small-item p10"><h1>Total Spent</h1></div>
+    <div class="small-item p10"><h1>Difference</h1></div>
+  </div>
+  <div ng-repeat="(key, data) in $ctrl.data" class="flex-container box transactions">
+    <div class="big-item p10"><h1>{{ key }}</h1></div>
+    <div class="small-item p10">{{ data.totalIncome / $ctrl.conversionDenominator | currency:'$' }}</div>
+    <div class="small-item p10 ">{{ data.totalSpent / $ctrl.conversionDenominator | currency:'$' }}</div>
+    <div class="small-item p10 ">{{ (data.totalSpent + data.totalIncome) / $ctrl.conversionDenominator | currency:'$' }}</div>
+  </div>
 </div>
