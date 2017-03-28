@@ -1,14 +1,19 @@
-<div class="flex-container-column">
-  <div class="flex-container p10">
+<div class="flex-container-column ptb50">
+  <section class="flex-container p10 box">
+    <div class="big-item p10"><h3>FILTERS:</h3></div>
+    <div class="big-item p10"><input type="checkbox" ng-model="$ctrl.ignoreDonuts" ng-change="$ctrl.setDisplayData()"> Ignore Donut Payments </div>
+  </section>
+  <section class="flex-container p10">
     <div class="big-item p10"><h1>Month</h1></div>
     <div class="small-item p10"><h1>Total Income</h1></div>
     <div class="small-item p10"><h1>Total Spent</h1></div>
     <div class="small-item p10"><h1>Difference</h1></div>
-  </div>
-  <div ng-repeat="(key, data) in $ctrl.data" class="flex-container box transactions">
+  </section>
+  <section ng-if="!$ctrl.isLoading" ng-repeat="(key, data) in $ctrl.data" class="flex-container box transactions">
     <div class="big-item p10"><h1>{{ key }}</h1></div>
     <div class="small-item p10">{{ data.totalIncome / $ctrl.conversionDenominator | currency:'$' }}</div>
     <div class="small-item p10 ">{{ data.totalSpent / $ctrl.conversionDenominator | currency:'$' }}</div>
     <div class="small-item p10 ">{{ (data.totalSpent + data.totalIncome) / $ctrl.conversionDenominator | currency:'$' }}</div>
-  </div>
+  </section>
+  <section ng-if="$ctrl.isLoading" class="flex-container box transactions"><h1 class="p10">LOADING...</h1></section>
 </div>

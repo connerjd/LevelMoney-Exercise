@@ -8,25 +8,59 @@ const args = {token, uid, 'api-token': apiToken};
 const conversionDenominator = 10000;
 
 class LevelMoneyController {
-    constructor($http) {
-        _.assign(this, {$http, conversionDenominator});
-        this.getAllTransactions();
+    constructor($http, $q, $timeout) {
+        _.assign(this, {$http, $q, $timeout, conversionDenominator, ignoreDonuts: false, isLoading: true});
+
+        this.getAllTransactions()
+            .then(res => {
+                this.initialData = _.get(res, 'data.transactions');
+                this.setDisplayData();
+            });
+    }
+
+    setDisplayData() {
+        this.data = [];
+        this.isLoading = true;
+
+        // Timeout to force digest
+        this.$timeout(() => {
+            this.formatTransactions(this.initialData)
+                .then(result => {
+                    this.isLoading = false;
+                    this.data = result;
+                });
+        });
+
+    }
+
+    isDonutTransaction(transaction) {
+        let merchant= _.toLower(transaction.merchant);
+        let isPurchase = transaction.amount < 0;
+        return isPurchase && (_.includes(merchant, 'donuts') || _.includes(merchant, 'dunkin #336784'));
     }
 
     getAllTransactions() {
-        this.$http
-            .post('https://2016.api.levelmoney.com/api/v2/core/get-all-transactions', {args})
-            .then(res => this.data = this.formatTransactions(_.get(res, 'data.transactions')));
+        return this.$http.post('https://2016.api.levelmoney.com/api/v2/core/get-all-transactions', {args});
     }
 
-    formatTransactions(transactions) {
+    sortTransactions(transactions) {
         let result = {};
 
         _.forEach(transactions, transaction => {
             let month = moment(transaction['transaction-time']).format('YYYY-MM');
-            result[month] = result[month] || [];
-            result[month].push(transaction);
+            if (!this.ignoreDonuts || (this.ignoreDonuts && !this.isDonutTransaction(transaction))) {
+                console.log('add something');
+                result[month] = result[month] || [];
+                result[month].push(transaction);
+            }
         });
+
+        return result;
+    }
+
+    formatTransactions(transactions) {
+        let deferred = this.$q.defer();
+        let result = this.sortTransactions(transactions);
 
         const monthStrings = _.keys(result);
         _.forEach(monthStrings, month => result[month] = this.getMonthTotals(result[month]));
@@ -35,7 +69,9 @@ class LevelMoneyController {
         const rangeOfMonths = this.getRangeOfMonths(monthStrings);
         result.average = this.getUserAveragesPerMonth(monthValues, rangeOfMonths);
 
-        return result;
+        deferred.resolve(result);
+
+        return deferred.promise;
     }
 
     getMonthTotals(transactions) {
@@ -83,4 +119,4 @@ class LevelMoneyController {
     }
 }
 
-export default ['$http', LevelMoneyController];
+export default ['$http', '$q', '$timeout', LevelMoneyController];
