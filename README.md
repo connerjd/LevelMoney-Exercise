@@ -9,6 +9,7 @@
     * [The Plan](#the-plan)
     * [The Why](#the-why)
     * [The How](#the-how)
+    * [The Afterthoughts](#the-afterthoughts)
 
 # Getting Started
 ## Dependencies
@@ -69,3 +70,28 @@ No real reason. I could used Grunt or just scripts with NPM but the boilerplate 
 
 ###### lodash
 Easily one of the best utility libraries for Javascript. This will help me make things faster and more readable.
+
+## The Afterthoughts
+
+### Base exercise (display basic info)
+Took me by surprise. I should've analyzed the data coming out of the endpoint a little more before starting to work. Was still pretty simple, just took a little more effort to format the data properly than anticipated.
+
+### Ignore Donuts
+Filtering the data was really simple since I separated concerns well when coding the initial display of info. The real issue was displaying the data with the filter. I wanted to display a loading icon whenever the data was being computed. To do that, I needed to create a client side promise using $q which took time (which I didn't have).
+
+### Crystal Ball
+I can do this but I don't have enough time.
+
+### Ignore CC Payments
+Again, just created a filter for this. Just displayed the filtered data just as I did with the basic data since I'm running out of time.
+The payments seem to be off; some income transactions didn't have its counterpart and vise versa. Not sure if I was supposed to filter out those transactions or not.
+
+### Overall
+This was a fun little exercise. If I had more time, I would:
+ * separate a bunch of my functions into services and filters so they can be used elsewhere
+ * manage the endpoints server side using node.js services and use a client side factory with Restangular to call the server side data sources
+ * make the ux better
+ * create tests using karma
+
+There are probably more things that I would change if I took glance over the codebase again but, as said, I'm running out of time and I'm done thinking for the night.
+Please, feel free to email me giving me any form of critique at justindconner2@gmail.com. This is definitely not my best work but hopefully it'll give you some insight. Thanks for the exercise!
