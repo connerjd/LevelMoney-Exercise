@@ -2,6 +2,7 @@
   <section class="flex-container p10 box">
     <div class="big-item p10"><h3>FILTERS:</h3></div>
     <div class="big-item p10"><input type="checkbox" ng-model="$ctrl.ignoreDonuts" ng-change="$ctrl.setDisplayData()"> Ignore Donut Payments </div>
+    <div class="big-item p10"><input type="checkbox" ng-model="$ctrl.ignoreCCPayments" ng-change="$ctrl.setDisplayData()"> Ignore CC Payments </div>
   </section>
   <section class="flex-container p10">
     <div class="big-item p10"><h1>Month</h1></div>
@@ -17,3 +18,21 @@
   </section>
   <section ng-if="$ctrl.isLoading" class="flex-container box transactions"><h1 class="p10">LOADING...</h1></section>
 </div>
+<div ng-if="!$ctrl.isLoading && $ctrl.ignoreCCPayments" class="flex-container-column ptb50">
+  <section class="flex-container p10">
+    <div class="big-item p10"><h1>Detected Credit Card Payments</h1></div>
+  </section>
+  <section class="flex-container p10">
+    <div class="big-item p10"><h1>Transaction ID</h1></div>
+    <div class="small-item p10"><h1>Merchant</h1></div>
+    <div class="small-item p10"><h1>Amount</h1></div>
+    <div class="small-item p10"><h1>Date</h1></div>
+  </section>
+  <section ng-repeat="data in $ctrl.ccData" class="flex-container box transactions">
+    <div class="big-item p10"><h1>{{ data['transaction-id'] }}</h1></div>
+    <div class="small-item p10">{{ data.merchant }}</div>
+    <div class="small-item p10">{{ data.amount / $ctrl.conversionDenominator | currency:'$' }}</div>
+    <div class="small-item p10 ">{{ data['transaction-time'] | date:'shortDate' }}</div>
+  </section>
+</div>
+

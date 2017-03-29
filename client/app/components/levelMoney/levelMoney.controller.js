@@ -9,13 +9,18 @@ const conversionDenominator = 10000;
 
 class LevelMoneyController {
     constructor($http, $q, $timeout) {
-        _.assign(this, {$http, $q, $timeout, conversionDenominator, ignoreDonuts: false, isLoading: true});
+        _.assign(this, {$http, $q, $timeout, conversionDenominator, ignoreDonuts: false, ignoreCCPayments: false, isLoading: true});
 
         this.getAllTransactions()
             .then(res => {
                 this.initialData = _.get(res, 'data.transactions');
+                this.ccData = this.getCCTransactions(this.initialData);
                 this.setDisplayData();
             });
+    }
+
+    getAllTransactions() {
+        return this.$http.post('https://2016.api.levelmoney.com/api/v2/core/get-all-transactions', {args});
     }
 
     setDisplayData() {
@@ -24,7 +29,8 @@ class LevelMoneyController {
 
         // Timeout to force digest
         this.$timeout(() => {
-            this.formatTransactions(this.initialData)
+            let filteredTransactions = this.applyFilters(this.initialData);
+            this.formatTransactions(filteredTransactions)
                 .then(result => {
                     this.isLoading = false;
                     this.data = result;
@@ -32,32 +38,19 @@ class LevelMoneyController {
         });
     }
 
-    sortTransactions(transactions) {
-        let result = {};
-
-        _.forEach(transactions, transaction => {
-            let month = moment(transaction['transaction-time']).format('YYYY-MM');
-            if (!this.ignoreTransaction(transaction)) {
-                result[month] = result[month] || [];
-                result[month].push(transaction);
-            }
-        });
-
-        return result;
-    }
-
     formatTransactions(transactions) {
         let deferred = this.$q.defer();
-        let result = this.sortTransactions(transactions);
+        let sortedTransactions = this.sortTransactions(transactions);
 
-        const monthStrings = _.keys(result);
-        _.forEach(monthStrings, month => result[month] = this.getMonthTotals(result[month]));
+        const monthStrings = _.keys(sortedTransactions);
+        let formattedTransactions = {};
+        _.forEach(monthStrings, month => formattedTransactions[month] = this.getMonthTotals(sortedTransactions[month]));
 
-        const monthValues = _.values(result);
-        const rangeOfMonths = this.getRangeOfMonths(monthStrings);
-        result.average = this.getUserAveragesPerMonth(monthValues, rangeOfMonths);
+        const monthValues = _.values(formattedTransactions);
+        const rangeOfMonths = this.getRangeOfMonthsForTransactions(monthStrings);
+        formattedTransactions.average = this.getUserAveragesPerMonth(monthValues, rangeOfMonths);
 
-        deferred.resolve(result);
+        deferred.resolve(formattedTransactions);
 
         return deferred.promise;
     }
@@ -92,43 +85,44 @@ class LevelMoneyController {
         return result;
     }
 
+    applyFilters(transactions) {
+        transactions = this.ignoreDonuts ? this.removeDonutTransactions(transactions) : transactions;
+        transactions = this.ignoreCCPayments ? this.removeCCTransactions(transactions) : transactions;
 
-
-    /////// Throw these into a service ///////
-    /**
-     * Gets all transactions for a specific user
-     * @returns {*} Promise of all transactions
-     */
-    getAllTransactions() {
-        return this.$http.post('https://2016.api.levelmoney.com/api/v2/core/get-all-transactions', {args});
+        return transactions;
     }
 
-    /**
-     * Returns true if a transaction is a transaction from Dunkin Donuts
-     * @param transaction Basic transaction from levelmoney endpoint
-     * @returns {boolean} Returns if transaction is from Dunkin Donuts
-     */
+    sortTransactions(transactions) {
+        return _.groupBy(transactions, transaction => moment(transaction['transaction-time']).format('YYYY-MM'));
+    }
+
+    getCCTransactions(transactions) {
+        return _.reduce(transactions, (result, transaction) => {
+            if (this.isCCTransaction(transaction)) result.push(transaction);
+            return result;
+        }, []);
+    }
+
+    isCCTransaction(transaction) {
+        let merchant= _.toLower(transaction.merchant);
+        return _.includes(merchant, 'cc payment') || _.includes(merchant, 'credit card payment');
+    }
+
     isDonutTransaction(transaction) {
         let merchant= _.toLower(transaction.merchant);
         let isPurchase = transaction.amount < 0;
         return isPurchase && (_.includes(merchant, 'donuts') || _.includes(merchant, 'dunkin #336784'));
     }
 
-    /**
-     * Filter for when to ignore a transaction
-     * @param transaction Basic transaction from levelmoney endpoint
-     * @returns {*|boolean} Returns true if the transaction should be ignored
-     */
-    ignoreTransaction(transaction) {
-        return this.ignoreDonuts && this.isDonutTransaction(transaction);
+    removeDonutTransactions(transactions) {
+        return _.omitBy(transactions, this.isDonutTransaction);
     }
 
-    /**
-     * Returns the number of months between the first and last transaction dates
-     * @param monthStrings Sorted list of string representations of month (should include year)
-     * @returns {number} Inclusive number of months between the first and last transaction dates
-     */
-    getRangeOfMonths(monthStrings) {
+    removeCCTransactions(transactions) {
+        return _.omitBy(transactions, this.isCCTransaction);
+    }
+
+    getRangeOfMonthsForTransactions(monthStrings) {
         let start = _.head(monthStrings);
         let end = _.last(monthStrings);
 
