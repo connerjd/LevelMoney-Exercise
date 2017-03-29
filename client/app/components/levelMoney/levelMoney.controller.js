@@ -30,17 +30,6 @@ class LevelMoneyController {
                     this.data = result;
                 });
         });
-
-    }
-
-    isDonutTransaction(transaction) {
-        let merchant= _.toLower(transaction.merchant);
-        let isPurchase = transaction.amount < 0;
-        return isPurchase && (_.includes(merchant, 'donuts') || _.includes(merchant, 'dunkin #336784'));
-    }
-
-    getAllTransactions() {
-        return this.$http.post('https://2016.api.levelmoney.com/api/v2/core/get-all-transactions', {args});
     }
 
     sortTransactions(transactions) {
@@ -48,8 +37,7 @@ class LevelMoneyController {
 
         _.forEach(transactions, transaction => {
             let month = moment(transaction['transaction-time']).format('YYYY-MM');
-            if (!this.ignoreDonuts || (this.ignoreDonuts && !this.isDonutTransaction(transaction))) {
-                console.log('add something');
+            if (!this.ignoreTransaction(transaction)) {
                 result[month] = result[month] || [];
                 result[month].push(transaction);
             }
@@ -102,6 +90,37 @@ class LevelMoneyController {
         result.totalSpent = result.totalSpent / rangeOfMonths;
 
         return result;
+    }
+
+
+
+    /////// Throw these into a service ///////
+    /**
+     * Gets all transactions for a specific user
+     * @returns {*} Promise of all transactions
+     */
+    getAllTransactions() {
+        return this.$http.post('https://2016.api.levelmoney.com/api/v2/core/get-all-transactions', {args});
+    }
+
+    /**
+     * Returns true if a transaction is a transaction from Dunkin Donuts
+     * @param transaction Basic transaction from levelmoney endpoint
+     * @returns {boolean} Returns if transaction is from Dunkin Donuts
+     */
+    isDonutTransaction(transaction) {
+        let merchant= _.toLower(transaction.merchant);
+        let isPurchase = transaction.amount < 0;
+        return isPurchase && (_.includes(merchant, 'donuts') || _.includes(merchant, 'dunkin #336784'));
+    }
+
+    /**
+     * Filter for when to ignore a transaction
+     * @param transaction Basic transaction from levelmoney endpoint
+     * @returns {*|boolean} Returns true if the transaction should be ignored
+     */
+    ignoreTransaction(transaction) {
+        return this.ignoreDonuts && this.isDonutTransaction(transaction);
     }
 
     /**
